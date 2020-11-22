@@ -1,0 +1,6 @@
+
+-e git+http://github.com/mballance/vlsim.git#egg=vlsim
+cocotb
+pybfms
+-e git+https://github.com/fvutils/fltools.git#egg=fltools
+
