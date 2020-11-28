@@ -7,63 +7,77 @@ Created on Nov 21, 2020
 import pybfms
 
 @pybfms.bfm(hdl={
-    pybfms.BfmType.Verilog : pybfms.bfm_hdl_path(__file__, "hdl/wb_initiator_bfm.v"),
-    pybfms.BfmType.SystemVerilog : pybfms.bfm_hdl_path(__file__, "hdl/wb_initiator_bfm.v"),
+    pybfms.BfmType.Verilog : pybfms.bfm_hdl_path(__file__, "hdl/la_initiator_bfm.v"),
+    pybfms.BfmType.SystemVerilog : pybfms.bfm_hdl_path(__file__, "hdl/la_initiator_bfm.v"),
     }, has_init=True)
-class WbInitiatorBfm():
+class LaInitiatorBfm():
 
 
     def __init__(self):
         self.busy = pybfms.lock()
         self.ack_ev = pybfms.event()
-        self.addr_width = 0
-        self.data_width = 0
+        self.width = 0
         self.reset_ev = pybfms.event()
         self.is_reset = False
         
-    async def write(self, adr, dat, sel):
+    async def set_bits(self, start, val, mask):
         await self.busy.acquire()
         
         if not self.is_reset:
             await self.reset_ev.wait()
             self.reset_ev.clear()
             
-        self._access_req(adr, dat, 1, sel)
-        
-        await self.ack_ev.wait()
-        self.ack_ev.clear()
+        self._set_bits(start, val, mask)
         
         self.busy.release()
         
-    async def read(self, adr):
+    def data_in(self, start, nbits):
+        pass
+        
+    async def set_oen(self, start, val, mask):
+        await self.busy.acquire()
+        
+        self._set_oen(start, val, mask)
+        
+        self.busy.release()
+        
+        
+    async def propagate(self):
         await self.busy.acquire()
         
         if not self.is_reset:
             await self.reset_ev.wait()
             self.reset_ev.clear()
-            
-        self._access_req(adr, 0, 0, 0)
-        
+
+        self._propagate_req()
         await self.ack_ev.wait()
         self.ack_ev.clear()
-        
         self.busy.release()
         
-        return self.dat_i
-        
-    @pybfms.import_task(pybfms.uint64_t,pybfms.uint64_t,pybfms.uint8_t,pybfms.uint8_t)
-    def _access_req(self, adr, dat, we, sel):
+    @pybfms.import_task(pybfms.uint32_t,pybfms.uint64_t,pybfms.uint64_t)
+    def _set_bits(self, start, val, mask):
         pass
     
-    @pybfms.export_task(pybfms.uint64_t)
-    def _access_ack(self, dat_i):
-        self.dat_i = dat_i
+    @pybfms.import_task(pybfms.uint32_t,pybfms.uint64_t,pybfms.uint64_t)
+    def _set_oen(self, start, val, mask):
+        pass
+        
+    @pybfms.import_task()
+    def _propagate_req(self):
+        pass
+    
+    @pybfms.export_task()
+    def _propagate_ack(self):
         self.ack_ev.set()
         
-    @pybfms.export_task(pybfms.uint32_t,pybfms.uint32_t)
-    def _set_parameters(self, addr_width, data_width):
-        self.addr_width = addr_width
-        self.data_width = data_width
+    @pybfms.export_task(pybfms.uint32_t, pybfms.uint32_t, pybfms.uint64_t)
+    def _update_data_in(self, start, nbits, data):
+        print("update_data_in: " + str(start) + " nbits=" + str(nbits) + " data=" + hex(data))
+        pass
+    
+    @pybfms.export_task(pybfms.uint32_t)
+    def _set_parameters(self, width):
+        self.width = width
         
     @pybfms.export_task()
     def _reset(self):

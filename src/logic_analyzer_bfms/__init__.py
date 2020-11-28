@@ -1,2 +1,2 @@
 
-from .wb_initiator_bfm import *
+from .la_initiator_bfm import *
