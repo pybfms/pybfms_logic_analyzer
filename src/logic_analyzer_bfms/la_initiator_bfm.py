@@ -19,6 +19,7 @@ class LaInitiatorBfm():
         self.width = 0
         self.reset_ev = pybfms.event()
         self.is_reset = False
+        self.in_data = 0;
         
     async def set_bits(self, start, val, mask):
         await self.busy.acquire()
@@ -72,8 +73,12 @@ class LaInitiatorBfm():
         
     @pybfms.export_task(pybfms.uint32_t, pybfms.uint32_t, pybfms.uint64_t)
     def _update_data_in(self, start, nbits, data):
-        print("update_data_in: " + str(start) + " nbits=" + str(nbits) + " data=" + hex(data))
-        pass
+        mask = ((1 << nbits) - 1) << start
+        nmask = ((1 << self.width)-1) & ~mask
+        self.in_data &= nmask
+        self.in_data |= ((data & ((1 << nbits)-1)) << start);
+        
+        print("new data_in: " + hex(self.in_data))
     
     @pybfms.export_task(pybfms.uint32_t)
     def _set_parameters(self, width):

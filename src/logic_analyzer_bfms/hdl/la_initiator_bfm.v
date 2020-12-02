@@ -23,12 +23,14 @@ module la_initiator_bfm #(
 	reg						propagate_v = 0;
 	reg						propagate = 0;
 	
+	integer i;
 	always @(posedge clock) begin
 		if (reset) begin
 			data_out <= {WIDTH{1'b0}};
 			oen <= {WIDTH{1'b0}};
 			propagate <= 0;
 			in_reset <= 1;
+			data_in_last <= {WIDTH{1'b0}};
 		end else begin
 			if (in_reset) begin
 				_reset();
@@ -46,15 +48,13 @@ module la_initiator_bfm #(
 				propagate_v = 0;
 			end
 		
-			data_in_last <= data_in;
-			if (data_in_last != data_in) begin
-				// TODO: should genericize this
-				if (data_in_last[127:64] != data_in[127:64]) begin
-					_update_data_in(64, 64, data_in[127:64]);
+			if (data_in_last !== data_in) begin
+				for (i=0; i<WIDTH; i=i+8) begin : data_in_i
+					if (data_in_last[i+:8] != data_in[i+:8]) begin
+						_update_data_in(i, 8, data_in[i+:8]);
+					end
 				end
-				if (data_in_last[63:0] != data_in[63:0]) begin
-					_update_data_in(0, 64, data_in[63:0]);
-				end
+				data_in_last <= data_in;
 			end
 		end
 	end
@@ -68,7 +68,7 @@ module la_initiator_bfm #(
 `ifdef EN_DEBUG_LA_INITIATOR_BFM
 		$display("_set_bits %0d val=%08h mask=%08h", start, val, mask);
 `endif
-		for (i=start; i<start+64 && i<WIDTH; i++) begin
+		for (i=start; i<start+64 && i<WIDTH; i=i+1) begin
 			if (mask[i-start]) begin
 `ifdef EN_DEBUG_LA_INITIATOR_BFM
 				$display("%t set bit %0d=%0d", $time, i, val[i-start]);
@@ -88,7 +88,7 @@ module la_initiator_bfm #(
 `ifdef EN_DEBUG_LA_INITIATOR_BFM
 		$display("_set_oen %0d val=%08h mask=%08h", start, val, mask);
 `endif
-		for (i=start; i<start+64 && i<WIDTH; i++) begin
+		for (i=start; i<start+64 && i<WIDTH; i=i+1) begin
 			if (mask[i-start]) begin
 `ifdef EN_DEBUG_LA_INITIATOR_BFM
 				$display("%t set oen %0d=%0d", $time, i, val[i-start]);
