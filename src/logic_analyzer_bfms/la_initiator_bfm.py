@@ -77,8 +77,6 @@ class LaInitiatorBfm():
         nmask = ((1 << self.width)-1) & ~mask
         self.in_data &= nmask
         self.in_data |= ((data & ((1 << nbits)-1)) << start);
-        
-        print("new data_in: " + hex(self.in_data))
     
     @pybfms.export_task(pybfms.uint32_t)
     def _set_parameters(self, width):
